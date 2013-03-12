@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<script type="text/javascript" src="../js/jquery-1.7.1.min.js"></script>
+	<script type="text/javascript" src="../js/jquery.google-analytics.js"></script>
+	<script type="text/javascript">
+		$(function() {
+			$.ga.debug = true;
+			$.ga.debugWindow = true;
+			$.ga
+					.setAccount('UA-0000000-1')
+					.setDomainName('example.co.jp')
+					.setCustomVar(1, 'c1', 'page', 3)
+					.trackPageview();
+
+			$.ga
+					.setAccount('UA-0000000-2', {tracker: 'a'})
+					.setCustomVar(1, 'c1', 'page', 3, {tracker: 'a'})
+					.trackPageview(null, {tracker: 'a'})
+					.setAccount('UA-0000000-3', {tracker: 'b'})
+					.setCustomVar(1, 'c2', 'page', 3, {tracker: 'b'})
+					.trackPageview(null, {tracker: 'b'});
+
+			// 外部リンク、ファイルダウンロードリンク、mailtoなどのリンクすべてclickじにトラックを仕込む
+			$.ga.autoTracking();
+
+			$('#custom-event').trackEvent('CustomCategory', 'CustomAction', $.ga.href, {tracker:[null,'b']});
+			$('#custom-form').trackEvent('CustomFormCategory', 'CustomFormAction', function(f){ return f.q.value; }, {event:'submit'});
+
+			// 遷移しないように
+			$('a').click(function() { return false; });
+			$('form').submit(function() { return false; });
+		});
+	</script>
+</head>
+<body>
+<ul>
+	<li><a href="inner.html">Inner link.</a></li>
+	<li><a href="http://www.google.com/" target="_blank">External link.</a></li>
+	<li><a href="file.pdf">PDF link.</a></li>
+	<li><a href="file.exe">EXE link.</a></li>
+	<li><a href="mailto:abc@example.com">abc@example.com</a></li>
+	<li><a href="tel:09012345678">090-1234-5678</a></li>
+	<li><a href="#" id="custom-event">Custom Event</a></li>
+</ul>
+<form id="custom-form" action="#">
+	<input type="text" name="q" value="">
+	<input type="submit" value="Submit">
+</form>
+</body>
+</html>
