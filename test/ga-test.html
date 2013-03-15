@@ -1,36 +1,45 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title></title>
+	<title>jquery.google-analytics.js test</title>
 	<script type="text/javascript" src="../js/jquery-1.7.1.min.js"></script>
 	<script type="text/javascript" src="../js/jquery.google-analytics.js"></script>
 	<script type="text/javascript">
+
+		$.ga.debug = true;
+		$.ga
+			.setAccount('UA-39292214-1')
+			.setDomainName('example.co.jp')
+			.setCustomVar(1, 'c1', 'page', 3)
+			.trackPageview();
+
+		// ãƒˆãƒ©ãƒƒã‚«ãƒ¼ã‚’æŒ‡å®šã™ã‚‹
+		$.ga
+			.setAccount('UA-39292214-2', {tracker: 'a'})
+			.setCustomVar(1, 'c1', 'page', 3, {tracker: 'a'})
+			.trackPageview(null, {tracker: 'a'})
+			.setAccount('UA-39292214-3', {tracker: 'b'})
+			.setCustomVar(1, 'c2', 'page', 3, {tracker: 'b'})
+			.trackPageview(null, {tracker: 'b'});
+
 		$(function() {
-			$.ga.debug = true;
-			$.ga.debugWindow = true;
-			$.ga
-					.setAccount('UA-0000000-1')
-					.setDomainName('example.co.jp')
-					.setCustomVar(1, 'c1', 'page', 3)
-					.trackPageview();
-
-			$.ga
-					.setAccount('UA-0000000-2', {tracker: 'a'})
-					.setCustomVar(1, 'c1', 'page', 3, {tracker: 'a'})
-					.trackPageview(null, {tracker: 'a'})
-					.setAccount('UA-0000000-3', {tracker: 'b'})
-					.setCustomVar(1, 'c2', 'page', 3, {tracker: 'b'})
-					.trackPageview(null, {tracker: 'b'});
-
-			// ŠO•”ƒŠƒ“ƒNAƒtƒ@ƒCƒ‹ƒ_ƒEƒ“ƒ[ƒhƒŠƒ“ƒNAmailto‚È‚Ç‚ÌƒŠƒ“ƒN‚·‚×‚Äclick‚¶‚Éƒgƒ‰ƒbƒN‚ğd‚Ş
+			// å¤–éƒ¨ãƒªãƒ³ã‚¯ã€ãƒ•ã‚¡ã‚¤ãƒ«ãƒ€ã‚¦ãƒ³ãƒ­ãƒ¼ãƒ‰ãƒªãƒ³ã‚¯ã€mailtoãªã©ã®ãƒªãƒ³ã‚¯ã™ã¹ã¦clickæ™‚ã«ãƒˆãƒ©ãƒƒã‚¯ã‚’ä»•è¾¼ã‚€
 			$.ga.autoTracking();
 
+			// ã‚«ã‚¹ã‚¿ãƒ ã‚¤ãƒ™ãƒ³ãƒˆã‚’ãƒªãƒ³ã‚¯ã«è¨­å®š
 			$('#custom-event').trackEvent('CustomCategory', 'CustomAction', $.ga.href, {tracker:[null,'b']});
+
+			// ã‚«ã‚¹ã‚¿ãƒ ã‚¤ãƒ™ãƒ³ãƒˆã‚’ãƒ•ã‚©ãƒ¼ãƒ ã®ã‚µãƒ–ãƒŸãƒƒãƒˆã«è¨­å®š
 			$('#custom-form').trackEvent('CustomFormCategory', 'CustomFormAction', function(f){ return f.q.value; }, {event:'submit'});
 
-			// ‘JˆÚ‚µ‚È‚¢‚æ‚¤‚É
-			$('a').click(function() { return false; });
-			$('form').submit(function() { return false; });
+			$('#visitor').text($.ga.getIsVistor());
+			$('#visitor-id').text($.ga.getVisitorId());
+			$('#first-visit').text($.ga.getFirstVisitTime());
+			$('#prev-visit').text($.ga.getPreviousVisitTime());
+			$('#current-visit').text($.ga.getCurrentVisitTime());
+			$('#visits').text($.ga.getCountOfVisits());
+			$('#pageviews').text($.ga.getCountOfPageview());
+			$('#source-media').text($.ga.getSource() + ' / ' + $.ga.getMedia());
 		});
 	</script>
 </head>
@@ -44,9 +53,30 @@
 	<li><a href="tel:09012345678">090-1234-5678</a></li>
 	<li><a href="#" id="custom-event">Custom Event</a></li>
 </ul>
-<form id="custom-form" action="#">
+<form id="custom-form" action="inner.html">
 	<input type="text" name="q" value="">
 	<input type="submit" value="Submit">
 </form>
+<hr>
+<h2>Cookie Test</h2>
+<dl>
+	<dt>Visitor</dt>
+	<dd id="visitor"></dd>
+	<dt>Visitor ID</dt>
+	<dd id="visitor-id"></dd>
+	<dt>First visit timestamp</dt>
+	<dd id="first-visit"></dd>
+	<dt>Previous visit timestamp</dt>
+	<dd id="prev-visit"></dd>
+	<dt>Current visit timestamp</dt>
+	<dd id="current-visit"></dd>
+	<dt>Count of visits</dt>
+	<dd id="visits"></dd>
+	<dt>Count of pageviews</dt>
+	<dd id="pageviews"></dd>
+	<dt>Source / Media</dt>
+	<dd id="source-media"></dd>
+
+</dl>
 </body>
 </html>
