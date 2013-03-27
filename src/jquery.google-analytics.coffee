@@ -24,14 +24,20 @@ do($ = jQuery) ->
 	ga._scriptLoad = false
 	ga.scriptUrl = (if 'https:' == document.location.protocol then 'https://ssl' else 'http://www') + '.google-analytics.com/ga.js';
 	ga._loadTime = null
+	ga._pageLoadTime = null
 
 
 	ga.href = (elm) ->
-		return elm.href
+		return $(elm).attr 'href'
 
 	ga.isScriptLoaded = ->
 		return ga._scriptLoad || (window._gat != undefined && typeof window._gat is 'object')
 
+	###*
+  * load
+  * Google Analytics スクリプト（ga.js）をロードします。
+  * @return $.gaオブジェクト
+  ###
 	ga.load = ->
 		return @ if ga.isScriptLoaded()
 		ga._loadTime = new Date()
@@ -44,9 +50,21 @@ do($ = jQuery) ->
 		ga._scriptLoad = true
 		return @
 
+	###*
+     * push
+     * _gaq.push のラッパー関数
+     * @param array
+     * @return $.gaオブジェクト
+	###
 	ga.push = ->
 		window._gaq.push.apply(window._gaq, arguments)
+		return @
 
+	###*
+     * call
+     * _gaq.push のラッパー関数
+     * @return $.gaオブジェクト
+	###
 	ga.call = (method, args, options) ->
 		defaults =
 			tracker: null
@@ -250,6 +268,10 @@ do($ = jQuery) ->
 	$.ga = $['google-analytics'] = ga
 
 	$ ->
+		$(document).ready ->
+			ga._pageLoadTime = new Date()
+			return
+
 		$.fn.trackEvent = (category, action, label, options) ->
 			method = if options && options.event then options.event else 'click'
 			return this.each ->

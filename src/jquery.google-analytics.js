@@ -31,12 +31,19 @@
     ga._scriptLoad = false;
     ga.scriptUrl = ('https:' === document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
     ga._loadTime = null;
+    ga._pageLoadTime = null;
     ga.href = function(elm) {
-      return elm.href;
+      return $(elm).attr('href');
     };
     ga.isScriptLoaded = function() {
       return ga._scriptLoad || (window._gat !== void 0 && typeof window._gat === 'object');
     };
+    /**
+     * load
+     * Google Analytics スクリプト（ga.js）をロードします。
+     * @return $.gaオブジェクト
+    */
+
     ga.load = function() {
       var s, script;
       if (ga.isScriptLoaded()) {
@@ -52,9 +59,23 @@
       ga._scriptLoad = true;
       return this;
     };
+    /**
+        * push
+        * _gaq.push のラッパー関数
+        * @param array
+        * @return $.gaオブジェクト
+    */
+
     ga.push = function() {
-      return window._gaq.push.apply(window._gaq, arguments);
+      window._gaq.push.apply(window._gaq, arguments);
+      return this;
     };
+    /**
+        * call
+        * _gaq.push のラッパー関数
+        * @return $.gaオブジェクト
+    */
+
     ga.call = function(method, args, options) {
       var a, defaults, m, settings;
       defaults = {
@@ -336,6 +357,9 @@
     }
     $.ga = $['google-analytics'] = ga;
     return $(function() {
+      $(document).ready(function() {
+        ga._pageLoadTime = new Date();
+      });
       $.fn.trackEvent = function(category, action, label, options) {
         var method;
         method = options && options.event ? options.event : 'click';

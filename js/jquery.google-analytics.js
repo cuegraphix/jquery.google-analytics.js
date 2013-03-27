@@ -36,6 +36,12 @@
   ga.isScriptLoaded = function() {
     return ga._scriptLoad || (window._gat !== void 0 && typeof window._gat === 'object');
   };
+  /**
+   * load
+   * Google Analytics スクリプト（ga.js）をロードします。
+   * @return $.gaオブジェクト
+  */
+
   ga.load = function() {
     var s, script;
     if (ga.isScriptLoaded()) {
@@ -51,9 +57,23 @@
     ga._scriptLoad = true;
     return this;
   };
+  /**
+      * push
+      * _gaq.push のラッパー関数
+      * @param array
+      * @return $.gaオブジェクト
+  */
+
   ga.push = function() {
-    return window._gaq.push.apply(window._gaq, arguments);
+    window._gaq.push.apply(window._gaq, arguments);
+    return this;
   };
+  /**
+      * call
+      * _gaq.push のラッパー関数
+      * @return $.gaオブジェクト
+  */
+
   ga.call = function(method, args, options) {
     var a, defaults, m, settings;
     defaults = {
