@@ -1,7 +1,11 @@
+
+###*
+ * jQuery Google Analytics v0.3.0 - jQuery plugin
+ * Copyright (c) 2013 cue - x-perience
+ * License: http://www.opensource.org/licenses/mit-license.php
+###
+_gaq = _gaq || []
 do($ = jQuery) ->
-
-	window._gaq = window._gaq || []
-
 	ga = {}
 
 	ga.debug = false
@@ -23,21 +27,24 @@ do($ = jQuery) ->
 
 	ga._scriptLoad = false
 	ga.scriptUrl = (if 'https:' == document.location.protocol then 'https://ssl' else 'http://www') + '.google-analytics.com/ga.js';
-	ga._loadTime = null
+	ga._loadTime = new Date().getTime()
 	ga._pageLoadTime = null
 
 
 	ga.href = (elm) ->
 		return $(elm).attr 'href'
 
+	ga.loc = (withSearch) ->
+		return location.pathname + if withSearch then location.search else ''
+
+	ga.pageSec = ->
+		d = new Date()
+		return parseInt((d.getTime() - ga._loadTime) / 1000)
+
+
 	ga.isScriptLoaded = ->
 		return ga._scriptLoad || (window._gat != undefined && typeof window._gat is 'object')
 
-	###*
-  * load
-  * Google Analytics スクリプト（ga.js）をロードします。
-  * @return $.gaオブジェクト
-  ###
 	ga.load = ->
 		return @ if ga.isScriptLoaded()
 		ga._loadTime = new Date()
@@ -48,26 +55,18 @@ do($ = jQuery) ->
 		s = document.getElementsByTagName('script')[0]
 		s.parentNode.insertBefore(script, s)
 		ga._scriptLoad = true
-		return @
+		@
 
-	###*
-     * push
-     * _gaq.push のラッパー関数
-     * @param array
-     * @return $.gaオブジェクト
-	###
+	### gaq Methods ###
 	ga.push = ->
-		window._gaq.push.apply(window._gaq, arguments)
-		return @
+		_gaq.push.apply(_gaq, arguments)
+		@
 
-	###*
-     * call
-     * _gaq.push のラッパー関数
-     * @return $.gaオブジェクト
-	###
 	ga.call = (method, args, options) ->
 		defaults =
+			async: true
 			tracker: null
+			delay: 0
 		settings = $.extend {}, defaults, options
 
 		a = if $.isArray(args) then args else [args]
@@ -88,59 +87,55 @@ do($ = jQuery) ->
 					return
 				else if typeof tracker == 'string' && tracker != ''
 					_m = tracker + '.' + m
-			a.unshift(_m)
-			ga.info(a)
-			ga.push(a)
-			a.shift()
+			_a = $.merge [_m], a
+			ga.info _a
+			# 非同期呼び出し
+			if settings.async
+				ga.push _a
+			else
+				try
+					pageTracker = _gat._getTrackerByName(tracker)
+					if $.isFunction pageTracker[method]
+						pageTracker[method].apply pageTracker, a
 			return
+		@
 
-		if !ga.isScriptLoaded()
-			ga.load()
-		return @
-
+	### Methods ###
 	ga.setAccount = (accountId, opt_options) ->
-		@call('_setAccount', accountId, opt_options)
+		@call '_setAccount', accountId, opt_options
 
 	ga.setDomainName = (domainName, opt_options) ->
-		@call('_setDomainName', domainName, opt_options)
+		@call '_setDomainName', domainName, opt_options
 
 	ga.setAllowLinker = (bool, opt_options) ->
-		@call('_setAllowLinker', bool, opt_options)
+		@call '_setAllowLinker', bool, opt_options
 
-	ga.setCustomVar = (index, name, value, scope, opt_options) ->
-		@call('_setCustomVar', [index, name, value, scope], opt_options)
+	ga.setCustomVar = (index, name, value, opt_scope, opt_options) ->
+		@call '_setCustomVar', [index, name, value, opt_scope], opt_options
+
+	ga.setSampleRate = (rate, opt_options) ->
+		@call '_setSampleRate', rate, opt_options
+
+	ga.setSessionCookieTimeout = (msec, opt_options) ->
+		@call '_setSessionCookieTimeout', msec, opt_options
+
+	ga.setVisitorCookieTimeout = (msec, opt_options) ->
+		@call '_setVisitorCookieTimeout', msec, opt_options
+
 
 	ga.trackEvent = (category, action, opt_label, opt_value, opt_noninteraction, opt_options) ->
-		a = [category, action]
-		i = 2
-		o = arguments[i]
-		options = null
-		while o
-			switch typeof o
-				when 'string' then a.push(o)
-				when 'object' then options = o
-				else break
-			o = arguments[++i]
-		@call('_trackEvent', a, options)
+		a = __getArgumentsAndOptions 2, arguments
+		@call '_trackEvent', a.arguments, a.options
 
 	ga.trackPageview = (uri, options) ->
-		@call('_trackPageview', uri, options)
+		@call '_trackPageview', uri, options
 
 	ga.trackSocial = (network, socialAction, opt_target, opt_pagePath, opt_options) ->
-		a = [network, socialAction]
-		i = 2
-		o = arguments[i]
-		options = null
-		while o
-			switch typeof o
-				when 'string' then a.push(o)
-				when 'object' then options = o
-				else break
-			o = arguments[++i]
-		@call('_trackSocial', a, options)
+		a = __getArgumentsAndOptions 2, arguments
+		@call '_trackEvent', a.arguments, a.options
 
 	ga.link = (targetUrl, useHash, opt_options) ->
-		@call('_link', [targetUrl, useHash], opt_options)
+		@call '_link', [targetUrl, useHash], opt_options
 
 	ga.autoTracking = (options) ->
 		defaults =
@@ -149,30 +144,72 @@ do($ = jQuery) ->
 			trackExternalLink: true
 			ignoreDomains: []
 			externalLinkEventCategory: 'ExternalLink'
-			trackFileDownload: true
-			fileDownloadEventCategory: 'FileDownload'
-			fileDownloadRegExp: /\.(doc|eps|svg|xls|ppt|pdf|zip|vsd|vxd|rar|exe|wma|mov|avi|wmv|mp3|mp4|jpg|zip|sit|exe|sea|gif)/i
+			trackDownload: true
+			downloadEventCategory: 'FileDownload'
+			eventAction: 'Click'
+			eventLabel: ga.href
+			downloadRegExp: /\.(pdf|zip|jpe?g|png|gif|mp\d?|mpe?g|flv|wmv|docx?|pptx?|xlsx?|exe)/i
 
 		settings = $.extend {}, defaults, options
-		$(document).ready ->
+		$ ->
 			$('a').
 				each ->
 					a = @
-					$a = $(@)
+					$a = $ @
 					host = a.hostname
 					path = a.pathname + a.search
 					if settings.trackProtocol && $.inArray(a.protocol, settings.trackingProtocols) >= 0
 						$a.click ->
-							ga.trackEvent(a.protocol.replace(':', ''), 'Click', $.ga.href(this), options)
+							ga.trackEvent a.protocol.replace(':', ''), settings.eventAction, settings.eventLabel this, options
 					else if settings.trackExternalLink && host != location.hostname && $.inArray(host, settings.ignoreDomains) < 0
 						$a.click ->
-							ga.trackEvent(settings.externalLinkEventCategory, 'Click', $.ga.href(this), options)
-					else if settings.trackFileDownload && path.match(settings.fileDownloadRegExp)
+							ga.trackEvent settings.externalLinkEventCategory, settings.eventAction, settings.eventLabel this, options
+					else if settings.trackDownload && path.match(settings.downloadRegExp)
 						$a.click ->
-							ga.trackEvent(settings.fileDownloadEventCategory, 'Click', $.ga.href(this), options)
+							ga.trackEvent settings.downloadEventCategory, settings.eventAction, settings.eventLabel this, options
 					return
 			return
-		return
+		@
+
+	ga.trackScroll = (options) ->
+		defaults=
+			eventCategory: 'Reading'
+			eventAction: 'Scroll'
+			eventLabel: ga.loc
+			scrollMinRatio: 40
+			scrollRenges: [40, 60, 80, 100]
+		settings = $.extend {}, defaults, options
+
+		_scrollMax = 0
+		$(window).bind 'scroll', ->
+			scrollTop = $(window).scrollTop()
+			if scrollTop > _scrollMax
+				_scrollMax = scrollTop
+		$(window).bind 'unload', ->
+			windowHeight = $(window).height()
+			docHeight = $(document).height()
+			scrollRatio = parseInt((_scrollMax + windowHeight) / docHeight * 100);
+			if scrollRatio >= settings.scrollMinRatio
+				l = 0
+				for s in settings.scrollRenges
+					if scrollRatio <= s
+						v = l + ' - ' + s + '%'
+						ga.trackEvent settings.eventCategory, settings.eventAction, settings.eventLabel, v
+						return
+					l = s
+
+	ga.trackDelay = (sec, options) ->
+		defaults=
+			eventCategory: 'Reading'
+			eventAction: 'Stay'
+			eventLabel: ga.loc
+			scrollMinRatio: 40
+			scrollRenges: [40, 60, 80, 100]
+		settings = $.extend {}, defaults, options
+		sec?= 15000
+		setTimeout ->
+			ga.trackEvent settings.eventCategory, settings.eventAction, settings.eventLabel, ga.pageSec()
+		, sec
 
 
 	# cookies
@@ -183,6 +220,7 @@ do($ = jQuery) ->
 		__utmb: '__utmb'
 		__utmz: '__utmz'
 	}
+
 	ga.cookie.get = (key) ->
 		if ga.cookie.cache[key]
 			return ga.cookie.cache[key]
@@ -260,6 +298,18 @@ do($ = jQuery) ->
 		c = ga.cookie.get(ga.cookie.config.__utmz)
 		return if c && c[4] then c[4]['utmccn'] else null
 
+	__getArgumentsAndOptions = (requireNum, args) ->
+		a = []
+		options = null
+		for o,i in args
+			if i < requireNum
+				a.push(o)
+				continue
+			switch typeof o
+				when 'string', 'boolean', 'number' then a.push(o)
+				when 'object' then options = o
+				else break
+		return { arguments: a, options: options }
 
 
 	if $.ga
@@ -268,27 +318,41 @@ do($ = jQuery) ->
 	$.ga = $['google-analytics'] = ga
 
 	$ ->
-		$(document).ready ->
-			ga._pageLoadTime = new Date()
-			return
+		ga._pageLoadTime = new Date().getTime()
+		# TODO gs.jsどのタイミングで呼ぶべき？
+		if !ga.isScriptLoaded()
+			ga.load()
 
 		$.fn.trackEvent = (category, action, label, options) ->
 			method = if options && options.event then options.event else 'click'
 			return this.each ->
-				$(this).on method, ->
-					_cat = if $.isFunction(category) then category.call null, this else category
-					_act = if $.isFunction(action)   then action.call null, this   else action
-					_lbl = if $.isFunction(label) then label.call null, this    else label
+				$(this).bind method, f = ->
+					_cat = if $.isFunction(category) then category.call(null, this).toString() else category
+					_act = if $.isFunction(action)   then action.call(null, this).toString()   else action
+					_lbl = if $.isFunction(label) then label.call(null, this).toString()    else label
 					ga.trackEvent(_cat, _act, _lbl, options)
-					return
+					if options && options.delay > 0 && $(this).attr('_target') != '_blank'
+						_link = this
+						setTimeout ->
+							$(_link).unbind(method, f)
+							_link[method]()
+						, options.delay
+						return false;
 				return
 
 		$.fn.trackPageview = (uri, options) ->
-			method = options.event || 'click'
+			method = if options && options.event then options.event else 'click'
 			return this.each ->
-				$(this).on method, ->
+				$(this).bind method, f = ->
 					_uri = if $.isFunction(uri) then uri.call null, this else uri
 					ga.trackPageview(_uri, options)
+					if options && options.delay > 0 && $(this).attr('_target') != '_blank'
+						_link = this
+						setTimeout ->
+							$(_link).unbind(method, f)
+							_link[method]()
+						, options.delay
+						return false;
 					return
 				return
 
