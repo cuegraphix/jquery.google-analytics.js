@@ -42,8 +42,11 @@ _gaq = _gaq || [];
   ga.href = function(elm) {
     return $(elm).attr('href');
   };
-  ga.loc = function(withSearch) {
+  ga.url = function(withSearch) {
     return location.pathname + (withSearch ? location.search : '');
+  };
+  ga.location = function(withSearch) {
+    return ga.url(withSearch);
   };
   ga.pageSec = function() {
     var d;
@@ -203,7 +206,7 @@ _gaq = _gaq || [];
     defaults = {
       eventCategory: 'Reading',
       eventAction: 'Scroll',
-      eventLabel: ga.loc,
+      eventLabel: ga.url,
       scrollMinRatio: 40,
       scrollRenges: [40, 60, 80, 100]
     };
@@ -241,7 +244,7 @@ _gaq = _gaq || [];
     defaults = {
       eventCategory: 'Reading',
       eventAction: 'Stay',
-      eventLabel: ga.loc,
+      eventLabel: ga.url,
       scrollMinRatio: 40,
       scrollRenges: [40, 60, 80, 100]
     };

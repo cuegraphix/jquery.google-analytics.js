@@ -3,7 +3,7 @@
 <head>
 	<title>jquery.google-analytics.js test</title>
 	<script type="text/javascript" src="../js/jquery-1.7.1.min.js"></script>
-	<script type="text/javascript" src="../js/jquery.google-analytics.js"></script>
+	<script type="text/javascript" src="../src/jquery.google-analytics.js"></script>
 	<script type="text/javascript">
 
 		$.ga.debug = true;
@@ -11,7 +11,9 @@
 			.setAccount('UA-39292214-1')
 			.setDomainName('example.co.jp')
 			.setCustomVar(1, 'c1', 'page', 3)
-			.trackPageview();
+			.trackPageview()
+			.trackScroll();
+
 
 		// トラッカーを指定する
 		$.ga
@@ -31,6 +33,15 @@
 
 			// カスタムイベントをフォームのサブミットに設定
 			$('#custom-form').trackEvent('CustomFormCategory', 'CustomFormAction', function(f){ return f.q.value; }, {event:'submit'});
+
+			// カスタムイベントをリンクに設定
+			$('#custom-event2').trackEvent('CustomCategory2', 'CustomAction2', function(el){
+				return $(el).closest('li').attr('id').toUpperCase();
+			});
+			// カスタムイベントをリンクに設定
+			$('#external-link-event').trackEvent('External', 'Click', function(el){
+				return $(el).closest('li').attr('id');
+			}, {async:false});
 
 			$('#visitor').text($.ga.getIsVistor());
 			$('#visitor-id').text($.ga.getVisitorId());
@@ -52,6 +63,8 @@
 	<li><a href="mailto:abc@example.com">abc@example.com</a></li>
 	<li><a href="tel:09012345678">090-1234-5678</a></li>
 	<li><a href="#" id="custom-event">Custom Event</a></li>
+	<li id="ParentID"><a href="#" id="custom-event2">Custom Event(Parent ID Value)</a></li>
+	<li id="Goto98g"><a href="http://www.98g.jp/" id="external-link-event">External link at target self</a></li>
 </ul>
 <form id="custom-form" action="inner.html">
 	<input type="text" name="q" value="">
@@ -78,5 +91,75 @@
 	<dd id="source-media"></dd>
 
 </dl>
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
 </body>
 </html>

@@ -34,8 +34,11 @@ do($ = jQuery) ->
 	ga.href = (elm) ->
 		return $(elm).attr 'href'
 
-	ga.loc = (withSearch) ->
+	ga.url = (withSearch) ->
 		return location.pathname + if withSearch then location.search else ''
+
+	ga.location = (withSearch) ->
+		ga.url(withSearch)
 
 	ga.pageSec = ->
 		d = new Date()
@@ -175,7 +178,7 @@ do($ = jQuery) ->
 		defaults=
 			eventCategory: 'Reading'
 			eventAction: 'Scroll'
-			eventLabel: ga.loc
+			eventLabel: ga.url
 			scrollMinRatio: 40
 			scrollRenges: [40, 60, 80, 100]
 		settings = $.extend {}, defaults, options
@@ -202,7 +205,7 @@ do($ = jQuery) ->
 		defaults=
 			eventCategory: 'Reading'
 			eventAction: 'Stay'
-			eventLabel: ga.loc
+			eventLabel: ga.url
 			scrollMinRatio: 40
 			scrollRenges: [40, 60, 80, 100]
 		settings = $.extend {}, defaults, options
