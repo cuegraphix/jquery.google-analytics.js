@@ -54,7 +54,7 @@ _gaq = _gaq || [];
     return parseInt((d.getTime() - ga._loadTime) / 1000);
   };
   ga.isScriptLoaded = function() {
-    return ga._scriptLoad || (window._gat !== void 0 && typeof window._gat === 'object');
+    return ga._scriptLoad || (window._gat(!void 0 && typeof window._gat === 'object'));
   };
   ga.load = function() {
     var s, script;
@@ -71,11 +71,14 @@ _gaq = _gaq || [];
     ga._scriptLoad = true;
     return this;
   };
+  ga._push = function() {
+    return _gaq.push.apply(_gaq, arguments);
+  };
   /* gaq Methods
   */
 
   ga.push = function() {
-    _gaq.push.apply(_gaq, arguments);
+    ga._push.apply(ga, arguments);
     return this;
   };
   ga.call = function(method, args, options) {
@@ -86,7 +89,7 @@ _gaq = _gaq || [];
       delay: 0
     };
     settings = $.extend({}, defaults, options);
-    a = $.isArray(args) ? args : [args];
+    a = args != null ? ($.isArray(args) ? args : [args]) : [];
     $.each(a, function(i, v) {
       if (v === null || v === void 0) {
         a.splice(i, 1);
@@ -113,7 +116,7 @@ _gaq = _gaq || [];
         ga.push(_a);
       } else {
         try {
-          pageTracker = _gat._getTrackerByName(tracker);
+          pageTracker = window._gat._getTrackerByName(tracker);
           if ($.isFunction(pageTracker[method])) {
             pageTracker[method].apply(pageTracker, a);
           }
@@ -140,6 +143,9 @@ _gaq = _gaq || [];
   ga.setSampleRate = function(rate, opt_options) {
     return this.call('_setSampleRate', rate, opt_options);
   };
+  ga.setCookiePath = function(path, opt_options) {
+    return this.call('_setCookiePath', path, opt_options);
+  };
   ga.setSessionCookieTimeout = function(msec, opt_options) {
     return this.call('_setSessionCookieTimeout', msec, opt_options);
   };
@@ -162,6 +168,55 @@ _gaq = _gaq || [];
   ga.link = function(targetUrl, useHash, opt_options) {
     return this.call('_link', [targetUrl, useHash], opt_options);
   };
+  ga.linkByPost = function(formObject, useHash, opt_options) {
+    return this.call('_linkByPost', [formObject, useHash], opt_options);
+  };
+  /* Campain Methods
+  */
+
+  ga.setCampaignTrack = function(bool, opt_options) {
+    return this.call('_setCampaignTrack', bool, opt_options);
+  };
+  ga.setAllowAnchor = function(bool, opt_options) {
+    return this.call('_setAllowAnchor', bool, opt_options);
+  };
+  ga.setCampSourceKey = function(key, opt_options) {
+    return this.call('_setCampSourceKey', key, opt_options);
+  };
+  ga.setCampMediumKey = function(key, opt_options) {
+    return this.call('_setCampMediumKey', key, opt_options);
+  };
+  ga.setCampTermKey = function(key, opt_options) {
+    return this.call('_setCampTermKey', key, opt_options);
+  };
+  ga.setCampContentKey = function(key, opt_options) {
+    return this.call('_setCampContentKey', key, opt_options);
+  };
+  ga.setCampNameKey = function(key, opt_options) {
+    return this.call('_setCampNameKey', key, opt_options);
+  };
+  ga.setCampNOKey = function(key, opt_options) {
+    return this.call('_setCampNOKey', key, opt_options);
+  };
+  ga.setCampaignCookieTimeout = function(msec, opt_options) {
+    return this.call('_setCampaignCookieTimeout', msec, opt_options);
+  };
+  /* Ecommerce Methods
+  */
+
+  ga.addItem = function(transactionId, sku, name, category, price, quantity, opt_option) {
+    return this.call('_addItem', [transactionId, sku, name, category, price, quantity], opt_option);
+  };
+  ga.addTrans = function(transactionId, affiliation, total, tax, shipping, city, state, country, opt_option) {
+    return this.call('_addTrans', [transactionId, affiliation, total, tax, shipping, city, state, country], opt_option);
+  };
+  ga.trackTrans = function() {
+    return this.call('_trackTrans');
+  };
+  /*
+   * Custom Method
+  */
+
   ga.autoTracking = function(options) {
     var defaults, settings;
     defaults = {
@@ -438,16 +493,17 @@ _gaq = _gaq || [];
     }
     $.fn.trackEvent = function(category, action, label, options) {
       var method;
-      method = options && options.event ? options.event : 'click';
+      method = options && options.event ? options.event.toLowerCase() : 'click';
       return this.each(function() {
         var f;
-        $(this).bind(method, f = function() {
-          var _act, _cat, _lbl, _link;
+        $(this).bind(method, f = function(e) {
+          var metaNewWin, _act, _cat, _lbl, _link;
           _cat = $.isFunction(category) ? category.call(null, this).toString() : category;
           _act = $.isFunction(action) ? action.call(null, this).toString() : action;
           _lbl = $.isFunction(label) ? label.call(null, this).toString() : label;
           ga.trackEvent(_cat, _act, _lbl, options);
-          if (options && options.delay > 0 && $(this).attr('_target') !== '_blank') {
+          metaNewWin = method === 'click' && (e.metaKey || e.ctrlKey);
+          if (!metaNewWin && options && options.delay > 0 && $(this).attr('_target') !== '_blank') {
             _link = this;
             setTimeout(function() {
               $(_link).unbind(method, f);
@@ -458,16 +514,17 @@ _gaq = _gaq || [];
         });
       });
     };
-    return $.fn.trackPageview = function(uri, options) {
+    $.fn.trackPageview = function(uri, options) {
       var method;
-      method = options && options.event ? options.event : 'click';
+      method = options && options.event ? options.event.toLowerCase() : 'click';
       return this.each(function() {
         var f;
-        $(this).bind(method, f = function() {
-          var _link, _uri;
+        $(this).bind(method, f = function(e) {
+          var usrNewWin, _link, _uri;
           _uri = $.isFunction(uri) ? uri.call(null, this) : uri;
           ga.trackPageview(_uri, options);
-          if (options && options.delay > 0 && $(this).attr('_target') !== '_blank') {
+          usrNewWin = method === 'click' && (e.metaKey || e.ctrlKey);
+          if (!usrNewWin && options && options.delay > 0 && $(this).attr('_target') !== '_blank') {
             _link = this;
             setTimeout(function() {
               $(_link).unbind(method, f);
@@ -475,6 +532,26 @@ _gaq = _gaq || [];
             }, options.delay);
             return false;
           }
+        });
+      });
+    };
+    $.fn.link = function(options) {
+      var method;
+      method = options && options.event ? options.event : 'click';
+      return this.each(function() {
+        var f;
+        return $(this).bind(method, f = function() {
+          ga.link(this, options);
+        });
+      });
+    };
+    return $.fn.linkByPost = function(options) {
+      var method;
+      method = options && options.event ? options.event : 'submit';
+      return this.each(function() {
+        var f;
+        return $(this).bind(method, f = function() {
+          ga.linkByPost(this, options);
         });
       });
     };

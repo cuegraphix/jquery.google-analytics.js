@@ -34,14 +34,13 @@
 			// カスタムイベントをフォームのサブミットに設定
 			$('#custom-form').trackEvent('CustomFormCategory', 'CustomFormAction', function(f){ return f.q.value; }, {event:'submit'});
 
-			// カスタムイベントをリンクに設定
+			// カスタムラベルを設定
 			$('#custom-event2').trackEvent('CustomCategory2', 'CustomAction2', function(el){
 				return $(el).closest('li').attr('id').toUpperCase();
 			});
-			// カスタムイベントをリンクに設定
-			$('#external-link-event').trackEvent('External', 'Click', function(el){
-				return $(el).closest('li').attr('id');
-			}, {async:false});
+
+			// イベントトラッキングから遅延して遷移させる（同一ウィンドウ遷移のみ）
+			$('#link-delay').trackEvent('External', 'Click', 'Delay', {delay:100});
 
 			$('#visitor').text($.ga.getIsVistor());
 			$('#visitor-id').text($.ga.getVisitorId());
@@ -64,7 +63,7 @@
 	<li><a href="tel:09012345678">090-1234-5678</a></li>
 	<li><a href="#" id="custom-event">Custom Event</a></li>
 	<li id="ParentID"><a href="#" id="custom-event2">Custom Event(Parent ID Value)</a></li>
-	<li id="Goto98g"><a href="http://www.98g.jp/" id="external-link-event">External link at target self</a></li>
+	<li><a href="http://www.98g.jp/" id="link-delay">Delay track event</a></li>
 </ul>
 <form id="custom-form" action="inner.html">
 	<input type="text" name="q" value="">

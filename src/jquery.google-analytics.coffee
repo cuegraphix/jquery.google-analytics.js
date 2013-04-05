@@ -46,7 +46,7 @@ do($ = jQuery) ->
 
 
 	ga.isScriptLoaded = ->
-		return ga._scriptLoad || (window._gat != undefined && typeof window._gat is 'object')
+		return ga._scriptLoad || (window._gat not undefined && typeof window._gat is 'object')
 
 	ga.load = ->
 		return @ if ga.isScriptLoaded()
@@ -60,9 +60,12 @@ do($ = jQuery) ->
 		ga._scriptLoad = true
 		@
 
+	ga._push = ->
+		_gaq.push.apply(_gaq, arguments)
+
 	### gaq Methods ###
 	ga.push = ->
-		_gaq.push.apply(_gaq, arguments)
+		ga._push.apply(ga, arguments)
 		@
 
 	ga.call = (method, args, options) ->
@@ -72,7 +75,7 @@ do($ = jQuery) ->
 			delay: 0
 		settings = $.extend {}, defaults, options
 
-		a = if $.isArray(args) then args else [args]
+		a = if args? then (if $.isArray(args) then args else [args]) else []
 		$.each a, (i, v)->
 			if v == null || v == undefined
 				a.splice(i, 1)
@@ -97,7 +100,7 @@ do($ = jQuery) ->
 				ga.push _a
 			else
 				try
-					pageTracker = _gat._getTrackerByName(tracker)
+					pageTracker = window._gat._getTrackerByName(tracker)
 					if $.isFunction pageTracker[method]
 						pageTracker[method].apply pageTracker, a
 			return
@@ -118,6 +121,9 @@ do($ = jQuery) ->
 
 	ga.setSampleRate = (rate, opt_options) ->
 		@call '_setSampleRate', rate, opt_options
+
+	ga.setCookiePath = (path, opt_options) ->
+		@call '_setCookiePath', path, opt_options
 
 	ga.setSessionCookieTimeout = (msec, opt_options) ->
 		@call '_setSessionCookieTimeout', msec, opt_options
@@ -140,6 +146,56 @@ do($ = jQuery) ->
 	ga.link = (targetUrl, useHash, opt_options) ->
 		@call '_link', [targetUrl, useHash], opt_options
 
+	ga.linkByPost = (formObject, useHash, opt_options) ->
+		@call '_linkByPost', [formObject, useHash], opt_options
+
+
+	### Campain Methods ###
+	ga.setCampaignTrack = (bool, opt_options) ->
+		@call '_setCampaignTrack', bool, opt_options
+
+	ga.setAllowAnchor = (bool, opt_options) ->
+		@call '_setAllowAnchor', bool, opt_options
+
+	ga.setCampSourceKey = (key, opt_options) ->
+		@call '_setCampSourceKey', key, opt_options
+
+	ga.setCampMediumKey = (key, opt_options) ->
+		@call '_setCampMediumKey', key, opt_options
+
+	ga.setCampTermKey = (key, opt_options) ->
+		@call '_setCampTermKey', key, opt_options
+
+	ga.setCampContentKey = (key, opt_options) ->
+		@call '_setCampContentKey', key, opt_options
+
+	ga.setCampNameKey = (key, opt_options) ->
+		@call '_setCampNameKey', key, opt_options
+
+	ga.setCampNOKey = (key, opt_options) ->
+		@call '_setCampNOKey', key, opt_options
+
+	ga.setCampaignCookieTimeout = (msec, opt_options) ->
+		@call '_setCampaignCookieTimeout', msec, opt_options
+
+	### Ecommerce Methods ###
+	ga.addItem = (transactionId, sku, name, category, price, quantity, opt_option) ->
+		@call '_addItem', [transactionId, sku, name, category, price, quantity], opt_option
+
+	ga.addTrans = (transactionId, affiliation, total, tax, shipping, city, state, country, opt_option) ->
+		@call '_addTrans', [transactionId, affiliation, total, tax, shipping, city, state, country], opt_option
+
+	ga.trackTrans = ->
+		@call '_trackTrans'
+
+
+
+
+
+
+	###
+  * Custom Method
+	###
 	ga.autoTracking = (options) ->
 		defaults =
 			trackProtocol: true
@@ -218,11 +274,10 @@ do($ = jQuery) ->
 	# cookies
 	ga.cookie = {}
 	ga.cookie.cache = {}
-	ga.cookie.config = {
+	ga.cookie.config =
 		__utma: '__utma'
 		__utmb: '__utmb'
 		__utmz: '__utmz'
-	}
 
 	ga.cookie.get = (key) ->
 		if ga.cookie.cache[key]
@@ -322,40 +377,58 @@ do($ = jQuery) ->
 
 	$ ->
 		ga._pageLoadTime = new Date().getTime()
-		# TODO gs.jsどのタイミングで呼ぶべき？
 		if !ga.isScriptLoaded()
 			ga.load()
 
 		$.fn.trackEvent = (category, action, label, options) ->
-			method = if options && options.event then options.event else 'click'
+			method = if options && options.event then options.event.toLowerCase() else 'click'
 			return this.each ->
-				$(this).bind method, f = ->
+				$(this).bind method, f = (e) ->
 					_cat = if $.isFunction(category) then category.call(null, this).toString() else category
 					_act = if $.isFunction(action)   then action.call(null, this).toString()   else action
 					_lbl = if $.isFunction(label) then label.call(null, this).toString()    else label
 					ga.trackEvent(_cat, _act, _lbl, options)
-					if options && options.delay > 0 && $(this).attr('_target') != '_blank'
+					# check the ctrl or command keydown
+					metaNewWin = method is 'click' and (e.metaKey or e.ctrlKey)
+					# delay
+					if !metaNewWin and options and options.delay > 0 and $(this).attr('_target') != '_blank'
 						_link = this
 						setTimeout ->
 							$(_link).unbind(method, f)
 							_link[method]()
 						, options.delay
-						return false;
+						return false
 				return
 
 		$.fn.trackPageview = (uri, options) ->
-			method = if options && options.event then options.event else 'click'
+			method = if options && options.event then options.event.toLowerCase() else 'click'
 			return this.each ->
-				$(this).bind method, f = ->
+				$(this).bind method, f = (e) ->
 					_uri = if $.isFunction(uri) then uri.call null, this else uri
 					ga.trackPageview(_uri, options)
-					if options && options.delay > 0 && $(this).attr('_target') != '_blank'
+					# check the ctrl or command keydown
+					usrNewWin = method is 'click' and (e.metaKey or e.ctrlKey)
+					# delay
+					if !usrNewWin and options and options.delay > 0 and $(this).attr('_target') != '_blank'
 						_link = this
 						setTimeout ->
 							$(_link).unbind(method, f)
 							_link[method]()
 						, options.delay
-						return false;
+						return false
 					return
 				return
 
+		$.fn.link = (options) ->
+			method = if options && options.event then options.event else 'click'
+			return this.each ->
+				$(this).bind method, f = ->
+					ga.link(this, options)
+					return
+
+		$.fn.linkByPost = (options) ->
+			method = if options && options.event then options.event else 'submit'
+			return this.each ->
+				$(this).bind method, f = ->
+					ga.linkByPost(this, options)
+					return
